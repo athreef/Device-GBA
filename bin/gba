@@ -3,10 +3,11 @@
 use strict;
 use warnings;
 
+package App::gba;
 # ABSTRACT: Command-line code uploader for the Gameboy Advance
 # VERSION
 
-package App::gba;
+use File::ShareDir 'dist_file';
 
 use base 'App::Cmd::Simple';
 use charnames qw();
@@ -56,7 +57,7 @@ gba - Command-line code uploader for the Gameboy Advance
 =head1 DESCRIPTION
 
 The Nintendo Gameboy Advance can either boot from cartridge or over link cable. The latter is caled multiboot mode and is basically SPI and a homebrew encoding scheme.
-This utility allows uploading multiboot GBA images with the L<BusPirate|Device::BusPirate>. Don't forget to pass C<-specs=gba_mb.specs> to GCC if you want to link a multiboot image.
+This utility allows uploading multiboot GBA images with the L<BusPirate|Device::BusPirate>. Don't forget to pass C<-specs=gba_mb.specs> to GCC if you want to link a multiboot image. The package's C<share/> subdirectory contains an L<example Makefile|https://github.com/athreef/Device-GBA/blob/master/share/testimg/Makefile> for cross-compilation.
 
 =head1 OPTIONS
 
@@ -126,10 +127,13 @@ sub validate_args {
         exit;
     }
 
-    if (@$args != 1) {
+    if (@$args > 1) {
         $self->usage_error(
-            "You must specify a GBA program to upload\n"
+            "You can specify at most one GBA program to upload\n"
         );
+    } elsif ( @$args == 0) {
+        print STDERR "No image specified. Uploading test image...\n";
+        push @$args, dist_file 'Device-GBA', 'testimg/test.gba';
     }
 
     return;
