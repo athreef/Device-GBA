@@ -4,63 +4,70 @@
 
 =head1 NAME
 
-Device::GBA - Perl Interface to the Gameboy Advance
-=head1 SYNOPSIS
+gba - Command-line code uploader for the Gameboy Advance
 
 =head1 VERSION
 
 version 0.001
 
-    use Device::GBA;
+=head1 SYNOPSIS
 
-    my $gba = Device::GBA->new(buspirate => '/dev/ttyUSB0') or die "No such device!\n";
-    $gba->upload('helloworld.gba');
+    $ gba --verbose code.gba
+    .....Opening GBA file readonly
+    .....GBA file length 0x000003a0
 
+    BusPirate(mstr) GBA(slave)
 
-=head1 METHODS AND ARGUMENTS
+    Looking for GBA 0x72026202
+    0x72026202 0x00006202  ; Found GBA
+    0x72026202 0x00006102  ; Recognition OK
+    0x00020000 0x00006200  ; Transfer of header data complete
+    0x72026200 0x00006202  ; Exchange master/slave info again
+    0x72026202 0x000063d1  ; Send palette data
+    0x73c863d1 0x000063d1  ; Send palette data, receive 0x73hh****
+    0x73fa63d1 0x000064d7  ; Send handshake data
+    0x737564d7 0x00000084  ; Send length info, receive seed 0x**cc****
+    Upload:  99% [=====================================*======== ]0m00s Left
+    Wait for GBA to respond with CRC 0x00750065
+    0x00750065 0x00000066  ; GBA ready with CRC
+    0x35ec0066 0x000035ec  ; Let's exchange CRC!
+    CRC ...hope they match!
+    MultiBoot done
 
-=over 4
+=head1 INSTALLATION
 
-=item new()
+    cpan Device::GBA
 
-Opens specified device and returns the corresponding object reference. Returns undef
-if an attempt to open the device has failed. Accepts following parameters:
+=head1 DESCRIPTION
 
-=over 4
+The Nintendo Gameboy Advance can either boot from cartridge or over link cable. The latter is caled multiboot mode and is basically SPI and a homebrew encoding scheme.
+This utility allows uploading multiboot GBA images with the L<BusPirate|Device::BusPirate>. Don't forget to pass C<-specs=gba_mb.specs> to GCC if you want to link a multiboot image. The package's C<share/> subdirectory contains an L<example Makefile|https://github.com/athreef/Device-GBA/blob/master/share/testimg/Makefile> for cross-compilation.
 
-=item B<buspirate>
+=head1 OPTIONS
 
-COM port or handle of the BusPirate connected to the Gameboy Advance.
+=head2 pirate
 
-=item B<spi>
+Buspirate COM port
 
-L<Device::BusPirate::Mode::SPI> instance.
+    $ gba -p <COM_port>
 
-=item B<verbose>
+=head2 verbose / no-verbose
 
-if true, methods on this instance will narrate what they're doing. Default is C<0>.
+Toggle verbose output. Output is verbose by default
 
-=back
+    $ gba --no-verbose
 
-=item upload
+=head2 version / v
 
-    $gba->upload($firmware_file)
+Shows the current version number
 
-Reads in I<$firmware_file> and uploads it to the Gameboy Advance.
+    $ gba --version
 
-=item spi_writeread
+=head2 help / h
 
-    $miso = $gba->spi_writeread($mosi)
+Shows a brief help message
 
-reads and writes 32 bit from the SPI bus.
-
-=item crc
-
-    $c = Device::GBA::crc($w, [$c = 0x0000c387])
-
-Calculates CRC for word C<$w> and CRC C<$c> according to the algrithm used by the GBA multiboot protocol.
-
-=back
+    $ gba --help
 
 =head1 GIT REPOSITORY
 
@@ -68,13 +75,11 @@ L<http://github.com/athreef/Device-GBA>
 
 =head1 SEE ALSO
 
-L<gba> -- The command line utility
+L<Device::GBA> powering this utility.
 
 =head1 AUTHOR
 
 Ahmad Fatoum C<< <athreef@cpan.org> >>, L<http://a3f.at>
-
-Based on The uploader written by Ken Kaarvik.
 
 =head1 COPYRIGHT AND LICENSE
 
