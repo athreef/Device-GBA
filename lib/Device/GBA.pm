@@ -4,6 +4,7 @@ use warnings;
 use integer;
 use IO::Termios;
 use Fcntl;
+use Time::HiRes;
 use Device::BusPirate;
 use File::stat;
 use Term::ProgressBar;
@@ -215,7 +216,7 @@ sub spi_handshake {
     $self->log("%s 0x%08x\n", $msg, $expected) if defined $msg;
 
     while ($self->spi_writeread($w) != $expected) {
-        select(undef, undef, undef, 0.01);
+        sleep 0.01;
     }
 }
 
