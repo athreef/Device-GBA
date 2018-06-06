@@ -8,7 +8,7 @@ gba - Command-line code uploader for the Gameboy Advance
 
 =head1 VERSION
 
-version 0.001
+version 0.002
 
 =head1 SYNOPSIS
 
@@ -40,7 +40,7 @@ version 0.001
 
 =head1 DESCRIPTION
 
-The Nintendo Gameboy Advance can either boot from cartridge or over link cable. The latter is caled multiboot mode and is basically SPI and a homebrew encoding scheme. Unfortunately, the Bus Pirate doesn't have a 100k SPI mode, so we are using 125k instead. If you encounter problems with booting, use the next lower speed (30k) as bitrate.
+The Nintendo Gameboy Advance can either boot from cartridge or over link cable. The latter is caled multiboot mode and is basically SPI and a homebrew encoding scheme. Unfortunately, the Bus Pirate doesn't have a 100k SPI mode, so we are using 125000 instead. If you encounter problems with booting, use the next lower speed (30000) as bitrate.
 This utility allows uploading multiboot GBA images with the L<BusPirate|Device::BusPirate>. Don't forget to pass C<-specs=gba_mb.specs> to devkitARM GCC if you want to link a multiboot image. The package's C<share/> subdirectory contains an L<example Makefile|https://github.com/athreef/Device-GBA/blob/master/share/testimg/Makefile> for cross-compilation. The wiring is as follows:
 
     GBA     Bus Pirate
@@ -52,7 +52,7 @@ Note: This is still work in progress!
 
 =head1 OPTIONS
 
-=head2 pirate
+=head2 pirate / p
 
 Buspirate COM port/device file
 
