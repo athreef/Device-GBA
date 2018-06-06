@@ -2,10 +2,8 @@ package Device::GBA;
 use strict;
 use warnings;
 use integer;
-use IO::Termios;
-use Fcntl;
 use Time::HiRes;
-use Device::BusPirate;
+use Device::BusPirate v0.15;
 use File::stat;
 use Term::ProgressBar;
 
@@ -21,6 +19,7 @@ use Carp;
 =head1 NAME
 
 Device::GBA - Perl Interface to the Gameboy Advance
+
 =head1 SYNOPSIS
 
     use Device::GBA;
@@ -28,6 +27,17 @@ Device::GBA - Perl Interface to the Gameboy Advance
     my $gba = Device::GBA->new(buspirate => '/dev/ttyUSB0') or die "No such device!\n";
     $gba->upload('helloworld.gba');
 
+=head1 DESCRIPTION
+
+The Nintendo Gameboy Advance can either boot from cartridge or over link cable. The latter is caled multiboot mode and is basically SPI and a homebrew encoding scheme. Unfortunately, the Bus Pirate doesn't have a 100k SPI mode, so we are using 125k instead. If you encounter problems with booting, use the next lower speed (30k) as bitrate.
+This utility allows uploading multiboot GBA images with the L<BusPirate|Device::BusPirate>. Don't forget to pass C<-specs=gba_mb.specs> to devkitARM GCC if you want to link a multiboot image. The package's C<share/> subdirectory contains an L<example Makefile|https://github.com/athreef/Device-GBA/blob/master/share/testimg/Makefile> for cross-compilation. The wiring is as follows:
+
+    GBA     Bus Pirate
+    SO  --> MISO
+    SI  <-- MOSI
+    CLK <-- CLK
+
+Note: This is still work in progress!
 
 =head1 METHODS AND ARGUMENTS
 
@@ -43,10 +53,6 @@ if an attempt to open the device has failed. Accepts following parameters:
 =item B<buspirate>
 
 COM port or handle of the BusPirate connected to the Gameboy Advance.
-
-=item B<spi>
-
-L<Device::BusPirate::Mode::SPI> instance.
 
 =item B<verbose>
 
@@ -66,46 +72,24 @@ sub new {
 
     $self->{log} = $self->{verbose} ? sub { printf @_ } : sub { };
 
-    if (!$self->{spi}) {
-        if (ref $self->{buspirate} ne 'Device::BusPirate') {
-            $self->{buspirate} = new_buspirate('Device::BusPirate', serial => $self->{buspirate}, %$self) or return;
-        }
-        $self->{spi} = $self->{buspirate}->enter_mode( "SPI" )->get;
+    if (ref $self->{buspirate} ne 'Device::BusPirate') {
+        $self->{buspirate} = Device::BusPirate->new(serial => $self->{buspirate}, %$self)
+           or return;
     }
 
-    $self->{spi}->configure(mode => 3, speed => $self->{bitrate})->get;
+    enter_spi($self);
 
     bless $self, $class;
     return $self;
 }
 
-sub new_buspirate
+sub enter_spi
 {
-   my $class = shift;
-   my %args = @_;
+   my $self = shift;
+   return if defined $self->{spi};
 
-   my $serial = $args{serial} || Device::BusPirate::BUS_PIRATE;
-   my $baud   = $args{baud} || 115200;
-
-   sysopen my $fd, $serial, O_RDWR|O_NDELAY|O_NOCTTY
-      or croak "Cannot open serial port $serial - $!";
-   my $fh = IO::Termios->new($fd)
-      or croak "Cannot wrap serial port $serial - $!";
-   $fh->set_mode( "$baud,8,n,1" )
-      or croak "Cannot set mode on serial port $serial";
-
-   $fh->setflag_icanon( 0 );
-   $fh->setflag_echo( 0 );
-
-   $fh->blocking( 0 );
-   $fh->setflag_cread( 1 );
-   $fh->setflag_clocal( 1 );
-
-   return bless {
-      fh => $fh,
-      alarms => [],
-      readers => [],
-   }, $class;
+   $self->{spi} = $self->{buspirate}->enter_mode( "SPI" )->get;
+   $self->{spi}->configure(mode => 3, speed => $self->{bitrate})->get;
 }
 
 =item upload
@@ -135,6 +119,8 @@ sub upload {
 
     $self->log(".....GBA file length 0x%08x\r\n\n", $fsize);
     $self->log("BusPirate(mstr) GBA(slave) \r\n\n");
+
+    $self->enter_spi;
 
     $self->spi_handshake(0x00006202, 0x72026202, "Looking for GBA");
 
@@ -205,6 +191,7 @@ reads and writes 32 bit from the SPI bus.
 sub spi_writeread {
     my $self = shift;
     my ($w, $msg) = @_;
+    $self->enter_spi;
     my $r = unpack 'L>', $self->{spi}->writeread(pack 'L>', shift)->get;
     $self->log("0x%08x 0x%08x  ; %s\n", $r , $w, $msg) if defined $msg;
     return $r;
@@ -273,6 +260,6 @@ Based on The uploader written by Ken Kaarvik.
 Copyright (C) 2018 Ahmad Fatoum
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
+it under the terms of the GNU General Public License v2.0 or later.
 
 =cut
