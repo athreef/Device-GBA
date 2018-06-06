@@ -71,7 +71,7 @@ sub new {
         @_
     };
 
-    $self->{log} = $self->{verbose} ? sub { printf @_ } : sub { };
+    $self->{log} = $self->{verbose} ? sub { printf shift . "\n", @_ } : sub { };
 
     enter_spi($self);
 
@@ -101,20 +101,20 @@ sub upload {
     my $firmware = shift;
 
     open my $fh, "<:raw", $firmware or croak "Can't open file `$firmware': $!\n";
-    $self->log(".....Opening GBA file readonly\r\n");
+    $self->log(".....Opening GBA file readonly");
 
     my $fsize = stat($firmware)->size;
     $fsize = ($fsize+0x0f)&0xfffffff0;
 
     if($fsize > 256 * 1024)
     {
-        croak ("Err: Max file size 256kB\n");
+        croak ("Err: Max file size 256kB");
     }
 
-    local $/ = \2;
+    my $fcnt;
 
-    $self->log(".....GBA file length 0x%08x\r\n\n", $fsize);
-    $self->log("BusPirate(mstr) GBA(slave) \r\n\n");
+    $self->log(".....GBA file length 0x%08x", $fsize);
+    $self->log("BusPirate(mstr) GBA(slave) ");
 
     $self->enter_spi;
 
@@ -123,8 +123,17 @@ sub upload {
     $self->spi_readwrite(0x00006202, "Found GBA");
     $self->spi_readwrite(0x00006102, "Recognition OK");
 
-    my $fcnt;
-    for($fcnt = 0; $fcnt < 192; $fcnt += 2) {
+    my $progress = Term::ProgressBar->new({
+            name   => 'Upload',
+            count  => $fsize,
+            ETA    => 'linear',
+            silent => not $self->{verbose}
+    });
+    my $oldlog = $self->{log};
+    $self->{log} = sub { $progress->message(sprintf shift, @_) } if $self->{verbose};
+
+    local $/ = \2;
+    for($fcnt = 0; $fcnt < 192; $progress->update($fcnt += 2)) {
         $self->spi_readwrite(unpack 'S<', <$fh>);
     }
 
@@ -144,16 +153,8 @@ sub upload {
     my $f = ((($r & 0x00ff0000) >> 8) + $h) | 0xffff0000;
     my $c = 0x0000c387;
 
-
-    my $progress = Term::ProgressBar->new({
-            name   => 'Upload',
-            count  => $fsize,
-            ETA    => 'linear',
-            silent => not $self->{verbose}
-    });
     local $/ = \4;
-
-    for (; $fcnt < $fsize; $fcnt += 4) {
+    for (; $fcnt < $fsize; $progress->update($fcnt += 4)) {
         my $chunk = <$fh> // '';
         $chunk .= "\0" x (4 - length $chunk);
         my $w = unpack('L<', $chunk);
@@ -161,9 +162,9 @@ sub upload {
         $m = ((0x6f646573 * $m) & 0xFFFFFFFF) + 1;
         my $data = $w ^ ((~(0x02000000 + $fcnt)) + 1) ^ $m ^ 0x43202f2f;
         $self->spi_readwrite($data);
-
-        $progress->update($fcnt);
     }
+
+    $self->{log} = $oldlog;
 
     $c = crc($f, $c);
 
@@ -172,8 +173,8 @@ sub upload {
     $self->spi_readwrite(0x00000066, "GBA ready with CRC");
     $self->spi_readwrite($c,         "Let's exchange CRC!");
 
-    $self->log("CRC ...hope they match!\n");
-    $self->log("MultiBoot done\n");
+    $self->log("CRC ...hope they match!");
+    $self->log("MultiBoot done");
 }
 
 =item spi_readwrite
@@ -189,14 +190,14 @@ sub spi_readwrite {
     my ($w, $msg) = @_;
     $self->enter_spi;
     my $r = unpack 'L>', $self->{spi}->readwrite(pack 'L>', shift)->get;
-    $self->log("0x%08x 0x%08x  ; %s\n", $r , $w, $msg) if defined $msg;
+    $self->log("0x%08x 0x%08x  ; %s", $r , $w, $msg) if defined $msg;
     return $r;
 }
 
 sub spi_handshake {
     my $self = shift;
     my ($w, $expected, $msg) = @_;
-    $self->log("%s 0x%08x\n", $msg, $expected) if defined $msg;
+    $self->log("%s 0x%08x", $msg, $expected) if defined $msg;
 
     while ($self->spi_readwrite($w) != $expected) {
         sleep 0.01;
