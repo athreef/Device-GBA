@@ -32,22 +32,20 @@ gba - Command-line code uploader for the Gameboy Advance
     $ gba --verbose code.gba
     .....Opening GBA file readonly
     .....GBA file length 0x000003a0
-
     BusPirate(mstr) GBA(slave)
-
     Looking for GBA 0x72026202
     0x72026202 0x00006202  ; Found GBA
     0x72026202 0x00006102  ; Recognition OK
     0x00020000 0x00006200  ; Transfer of header data complete
     0x72026200 0x00006202  ; Exchange master/slave info again
     0x72026202 0x000063d1  ; Send palette data
-    0x73c863d1 0x000063d1  ; Send palette data, receive 0x73hh****
-    0x73fa63d1 0x000064d7  ; Send handshake data
-    0x737564d7 0x00000084  ; Send length info, receive seed 0x**cc****
-    Upload:  99% [=====================================*======== ]0m00s Left
+    0x739163d1 0x000063d1  ; Send palette data, receive 0x73hh****
+    0x739863d1 0x000064a0  ; Send handshake data
+    0x736464a0 0x00000084  ; Send length info, receive seed 0x**cc****
+    Upload: 100% [=========================================]D 0h00m14s
     Wait for GBA to respond with CRC 0x00750065
     0x00750065 0x00000066  ; GBA ready with CRC
-    0x35ec0066 0x000035ec  ; Let's exchange CRC!
+    0x8caa0066 0x00008caa  ; Let's exchange CRC!
     CRC ...hope they match!
     MultiBoot done
 
