@@ -99,8 +99,7 @@ sub enter_spi
    return if defined $self->{spi};
 
    $self->{spi} = $self->{adapter}->make_protocol("SPI")->get;
-   $self->{spi}->configure(mode => 3, max_bitrate => $self->{bitrate},
-      open_drain => 0)->get;
+   $self->{spi}->configure(mode => 3, max_bitrate => $self->{bitrate})->get;
 }
 
 =item upload
