@@ -38,6 +38,20 @@ This utility allows uploading multiboot GBA images via L<Device::Chip::Adapter>s
     CLK <-- CLK
     GND --- GND
 
+(Note to myself:) The cable I made looks like this:
+
+                             ___________________
+    .--------GND (white)----/      .-------._  |
+    |  .-----SD (black)------------|SD (B) |_  |
+    |  |  .--SO (yellow)---,      -|SC (R) |_--+-.
+   _|__|__|_                \     -|GND (W)|_--' |
+  / 6  4  2 \                \____-|SO (Y) |_    |
+  \_5_ 3 _1_/                  ___-|SI (O) |_    |
+    | \_/ '-- VDD (n/a)       /    '-------'     |
+    |  '----- SI (orange) ---/                   |
+    '-------- SC (red) --------------------------'
+
+
 Note: This is still work in progress!
 
 =head1 METHODS AND ARGUMENTS
