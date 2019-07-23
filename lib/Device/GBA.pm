@@ -100,7 +100,7 @@ sub enter_spi
 
    $self->{spi} = $self->{adapter}->make_protocol("SPI")->get;
    $self->{spi}->configure(mode => 3, max_bitrate => $self->{bitrate},
-      opendrain => 0)->get;
+      open_drain => 0)->get;
 }
 
 =item upload
